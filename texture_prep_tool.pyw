@@ -1,7 +1,8 @@
+import os
+
 import wx
 import wx.lib.inspection
-
-import os
+from git import Repo
 
 class MainFrame(wx.Frame):
     
@@ -10,7 +11,8 @@ class MainFrame(wx.Frame):
         # constants
         self.debug_enabled = False
         
-        # self.base_texture_dir = os.path.abspath(os.getcwd())+"\\TestRepo\\TestProject\\Assets\\Textures"
+        self.base_repo_path = os.path.abspath(os.getcwd())+"\\TestRepo"
+        self.base_texture_dir = "TestProject\\Assets\\Textures"
         
         self.max_name_length = 64
         self.max_path_length = 260 # based on old Windows path limit
@@ -44,9 +46,10 @@ class MainFrame(wx.Frame):
             "Materials":"MAT"
         }
         
-        self.error_text_color = wx.TextAttr(wx.RED)
-        self.success_text_color = wx.TextAttr(wx.BLUE)
-        self.default_text_color = wx.TextAttr(wx.BLACK)
+        self.default_text_color = wx.TextAttr(wx.NamedColour("BLACK"))
+        self.error_text_color = wx.TextAttr(wx.NamedColour("RED"))
+        self.success_text_color = wx.TextAttr(wx.NamedColour("BLUE"))
+        self.versioncontrol_text_color = wx.TextAttr(wx.NamedColour("DARK SLATE BLUE"))
         
         # UI construction
         
@@ -91,7 +94,7 @@ class MainFrame(wx.Frame):
             ) 
             ))
         
-        self.validation_button.Disable();
+        self.validation_button.Disable()
         self.validation_sizer.Add(self.validation_button, proportion=0, flag=wx.ALL|wx.RIGHT, border=5)
         
         self.validation_separator = wx.StaticLine(self.main_panel, style=wx.LI_VERTICAL)
@@ -103,12 +106,12 @@ class MainFrame(wx.Frame):
         
         self.rename_newname = wx.TextCtrl(self.main_panel, id=wx.ID_ANY)
         self.rename_newname.Bind(wx.EVT_CHAR, self.onRenameKeypress)
-        self.rename_newname.Disable();
+        self.rename_newname.Disable()
         self.validation_sizer.Add(self.rename_newname, proportion=1, flag=wx.ALL|wx.CENTER, border=5)
         
         self.rename_button = wx.Button(self.main_panel, label='Rename')
         self.rename_button.Bind(wx.EVT_BUTTON, self.onRenameButtonClick)
-        self.rename_button.Disable();
+        self.rename_button.Disable()
         self.validation_sizer.Add(self.rename_button, proportion=0, flag=wx.ALL|wx.RIGHT, border=5)
         
         # submission
@@ -118,12 +121,12 @@ class MainFrame(wx.Frame):
         self.submission_sizer.Add(self.submission_label, proportion=0, flag=wx.ALL|wx.LEFT, border=5)
         
         self.submission_note = wx.TextCtrl(self.main_panel, id=wx.ID_ANY, style=wx.TE_MULTILINE|wx.TE_READONLY)
-        self.submission_note.Disable();
+        self.submission_note.Disable()
         self.submission_sizer.Add(self.submission_note, proportion=1, flag=wx.EXPAND, border=5)
         
         self.submission_button = wx.Button(self.main_panel, label='Submit')
         self.submission_button.Bind(wx.EVT_BUTTON, self.onSubmissionButtonClick)
-        self.submission_button.Disable();
+        self.submission_button.Disable()
         self.submission_sizer.Add(self.submission_button, proportion=0, flag=wx.ALL | wx.CENTER, border=5)
         
         # output
@@ -145,7 +148,7 @@ class MainFrame(wx.Frame):
         self.main_sizer.Add(self.output_sizer, proportion=1, flag=wx.ALL|wx.EXPAND, border=5)
         self.main_panel.SetSizer(self.main_sizer)
         
-        self.unitTests()
+        self.debugTests()
         
         self.Layout()
         if self.debug_enabled:
@@ -161,10 +164,28 @@ class MainFrame(wx.Frame):
         if color:
             self.log_output.SetDefaultStyle(self.default_text_color)
         
-    def unitTests(self):
+    def debugTests(self):
         # self.printToLog(self.base_texture_dir)
         # self.printToLog(self.hasValidPrefix("T_est_texture"))
         # self.printToLog(self.hasValidCharacters("ss_T9_"))
+        
+        self.repo = Repo(self.base_repo_path)
+        # print(self.repo.working_tree_dir)
+        # print(self.repo.is_dirty())
+        
+        # self.repo.git.reset() # git reset
+        # self.printToLog("//Version Control Status//:\n"+self.repo.git.status(), self.versioncontrol_text_color) # git status
+        
+        # self.repo.git.add(all=True) # get all changes -> git add -A
+        # self.repo.git.add("TestProject/Assets/Textures/Environments/T_ENV_sddsd02_N.png")
+        # self.repo.index.remove("TestProject/Assets/Textures/Environments/T_ENV_sddsd02_N.png")
+        
+        print(self.repo.head) #HEAD
+        print(self.repo.active_branch.name) #master
+        print(self.repo.head.reference) #master
+        print(self.repo.bare) # False, even with no commits and no tracked files
+        print(self.repo.untracked_files)
+        
         return
         
 
@@ -185,18 +206,19 @@ class MainFrame(wx.Frame):
         # set validation and submission section state
         if len(self.selection_filepath.GetValue()) > 0:
         
-            self.validation_button.Enable();
-            self.rename_newname.Enable();
-            self.rename_button.Enable();
+            self.validation_button.Enable()
+            self.rename_newname.Enable()
+            self.rename_button.Enable()
             
         else:
-            self.validation_button.Disable();
-            self.rename_newname.Disable();
-            self.rename_button.Disable();
+            self.validation_button.Disable()
+            self.rename_newname.Disable()
+            self.rename_button.Disable()
         
         # submission should always be closed at this point
-        self.submission_note.Disable();
-        self.submission_button.Disable();
+        self.submission_note.SetValue("")
+        self.submission_note.Disable()
+        self.submission_button.Disable()
             
     
     def isValidChar(self, char):
@@ -258,7 +280,24 @@ class MainFrame(wx.Frame):
         
         return False
 
+    def getRepoPath(self, path):
+        return (self.base_texture_dir+str(path.split(self.base_texture_dir)[1])).replace("\\","/")
+        
+    def isNewFile(self, path):
+        return (self.getRepoPath(path) in self.repo.untracked_files)
 
+    def setSubmissionNote(self, path):
+        
+        commit_message = ""
+        if self.isNewFile(path): # not yet in repo
+            commit_message = "Adding "+self.getRepoPath(path)+"."
+        else: # already in repo
+            commit_message = "Changing "+self.getRepoPath(path)+"."
+        
+        # populate commit field with text
+        self.submission_note.SetValue(commit_message)
+        
+    
     def onValidationButtonClick(self, event):
         self.printToLog("Validation requested...")
         
@@ -293,17 +332,17 @@ class MainFrame(wx.Frame):
             self.printToLog(curr_filename+" does not have a valid suffix. Please use any of the following: "+str(self.approved_suffixes), self.error_text_color)
             is_valid = False
         
-        # check for duplicates in repo
-        
         # determine submission state
         if is_valid:
             self.printToLog(full_path+" has passed all validation checks - Submission Allowed.", self.success_text_color)
-            self.submission_note.Enable();
-            self.submission_button.Enable();
+            self.submission_note.Enable()
+            self.setSubmissionNote(full_path)
+            self.submission_button.Enable()
         else:
             self.printToLog(full_path+" has failed validation checks - Please rectify and re-Validate.", self.error_text_color)
-            self.submission_note.Disable();
-            self.submission_button.Disable();
+            self.submission_note.SetValue("")
+            self.submission_note.Disable()
+            self.submission_button.Disable()
         
         
     def onRenameKeypress(self, event):
@@ -341,24 +380,32 @@ class MainFrame(wx.Frame):
             else:
                 self.renameFile(curr_dir,curr_filename,new_filename,curr_ext)
                 
-                # reset all UI elements
+                # reset all UI elements after a rename
                 self.selection_filepath.SetValue("")
                 
-                self.validation_button.Disable();
-                self.rename_newname.SetValue("");
-                self.rename_newname.Disable();
-                self.rename_button.Disable();
+                self.validation_button.Disable()
+                self.rename_newname.SetValue("")
+                self.rename_newname.Disable()
+                self.rename_button.Disable()
                 
-                self.submission_note.Disable();
-                self.submission_button.Disable();
-    
+                self.submission_note.SetValue("")
+                self.submission_note.Disable()
+                
     
     def onSubmissionButtonClick(self, event):
         self.printToLog("Submission requested...")
         
+        full_path = self.selection_filepath.GetValue()
         
-    
-    
+        if self.isNewFile(full_path):        
+            self.repo.git.add(full_path)
+            self.printToLog("//Version Control Status//:\n"+self.repo.git.status(), self.versioncontrol_text_color) # git status
+        
+        commit_note = self.submission_note.GetValue()
+        self.repo.git.commit('-m',commit_note) #git commit -m 'commit note' ./path/to/my/file.ext
+        self.printToLog("//Version Control Status//:\n"+self.repo.git.status(), self.versioncontrol_text_color) # git status
+        
+        
 if __name__ == '__main__':
     app = wx.App()
     main_frame = MainFrame()
