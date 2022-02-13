@@ -1,0 +1,42 @@
+
+Thank you for your interest (or curiousity) in
+enhancing/maintaining the Texture Prep Tool!
+
+[Notes for Version 0.1]
+
+Here are some features that may need your attention, by component:
+
+1) Selection
+  The current file selection dialog only allows selection of a single texture file (of .bmp, .jpg, or .png type).
+  Selection of multiple texture files at a time, either through Ctrl+Click from the existing dialog, 
+  or a different setup that allows checkboxes next to each file, would be an improvement in efficiency.
+  This would lead to a 'Selection List' that can again be further refined (through the above described mechanism)
+  before taking the desired files forward into Validation.
+
+2) Validation
+  The current validation scheme relies on hard-coded rules in code, and any changes to it
+  will require someone with scripting knowledge. This is cumbersome, and it will be advantageous to make the rules
+  primarily 'data-driven'. This would mean separating the rules themselves into custom 'rules' files with easily readable 'pseudo-code', 
+  and parsing them on tool startup. This also bodes well for the future - once implemented,
+  the same tool can be fed custom rules for different types of validations (other Art assets, Audio, maybe even programmers).  
+
+2.1) Rename
+  The current rename process does not allow changing the location (path) of the file. This could be an important feature,
+  as textures may be re-used between categories, or checked-in to the wrong location at some point.
+  There is no ability to use the (left and right) arrow keys to move across the rename field - the standard keycodes don't seem to be working,
+  might be as simple as finding the correct keycodes and adding them to the event handler.
+  Also, there is no ability to copy-paste into the rename field at the moment, because of the character restrictions in place,
+  but there may be a clever way to strip out all invalid characters and paste in what's left - maybe something to explore.  
+ 
+3) Submission
+  The current submission phase accepts a rudimentary note automatically generated from a successful validation,
+  and uses that as the commit message. The note could be made more relevant by adding a 'user comments' field 
+  (restricted in length - probably to a tweet), where the user can add a custom message.
+  Also, the repo path is embedded in the code at the moment - this should be separated out into a 'config' file
+  that is parsed at tool startup, and would be a convenient location for adding other tool initialization data (resolution, themes, etc).
+
+//Other considerations
+- UI flow code (enabling/disabling buttons, clearing fields) could be better encapsulated into 'state' functions
+- Might be worth adding confirmation dialogs for preventing accidents while renaming or submitting files.
+- Some tooltips have been added - more in-context help would be better.
+- A File Preview window might be a nice-to-have, especially before clicking the submit button.

@@ -10,9 +10,15 @@ class MainFrame(wx.Frame):
         
         # constants
         self.debug_enabled = False
+        self.tool_version = "0.0.1"
         
         self.base_repo_path = os.path.abspath(os.getcwd())+"\\TestRepo"
         self.base_texture_dir = "TestProject\\Assets\\Textures"
+        
+        # init repo (safe to do every startup)
+        self.repo = Repo.init(self.base_repo_path)
+        # discard changes in working directory
+        self.repo.git.restore('.')
         
         self.max_name_length = 64
         self.max_path_length = 260 # based on old Windows path limit
@@ -46,14 +52,14 @@ class MainFrame(wx.Frame):
             "Materials":"MAT"
         }
         
-        self.default_text_color = wx.TextAttr(wx.NamedColour("BLACK"))
-        self.error_text_color = wx.TextAttr(wx.NamedColour("RED"))
-        self.success_text_color = wx.TextAttr(wx.NamedColour("BLUE"))
-        self.versioncontrol_text_color = wx.TextAttr(wx.NamedColour("DARK SLATE BLUE"))
+        self.default_text_color = wx.TextAttr(wx.Colour("BLACK"))
+        self.error_text_color = wx.TextAttr(wx.Colour("RED"))
+        self.success_text_color = wx.TextAttr(wx.Colour("BLUE"))
+        self.versioncontrol_text_color = wx.TextAttr(wx.Colour("DARK SLATE BLUE"))
         
         # UI construction
         
-        wx.Frame.__init__(self, None, wx.ID_ANY, title='Texture Prep Tool', size=(1080,720))
+        wx.Frame.__init__(self, None, wx.ID_ANY, title='Texture Prep Tool v'+self.tool_version, size=(1080,720))
         
         self.main_panel = wx.Panel(self, id=wx.ID_ANY)
         
@@ -166,10 +172,24 @@ class MainFrame(wx.Frame):
         
     def debugTests(self):
         # self.printToLog(self.base_texture_dir)
-        # self.printToLog(self.hasValidPrefix("T_est_texture"))
-        # self.printToLog(self.hasValidCharacters("ss_T9_"))
+        # self.printToLog(self.hasValidCharacters("ss_T9_")) #True
         
-        self.repo = Repo(self.base_repo_path)
+        # self.printToLog(self.hasValidPathLength(
+        # "TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/"
+        # "TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/"
+        # "TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/"
+        # "TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/ss_T9_")) #False
+        
+        # self.printToLog(self.hasValidNameLength(
+        # "TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/TestProject/"
+        # "TestProject/aaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeiiiiiiiiiiiiiiioooooooooooouuuuuuuuuuu")) #False
+        
+        # self.printToLog(self.hasValidPrefix("T_est_texture")) #True
+        # self.printToLog(self.hasValidTypeInfix("D:\TexturePrepTool\TestRepo\TestProject\Assets\Textures\Environments\T_JT_sddsd01_N.png")) #False
+        # self.printToLog(self.hasValidTypeInfix("D:\TexturePrepTool\TestRepo\TestProject\Assets\Textures\Characters\T_CHR_sddsd02_N.png")) #True
+        # self.printToLog(self.hasValidSuffix("ss_T9_asddsds_H"))
+        
+        
         # print(self.repo.working_tree_dir)
         # print(self.repo.is_dirty())
         
@@ -180,11 +200,13 @@ class MainFrame(wx.Frame):
         # self.repo.git.add("TestProject/Assets/Textures/Environments/T_ENV_sddsd02_N.png")
         # self.repo.index.remove("TestProject/Assets/Textures/Environments/T_ENV_sddsd02_N.png")
         
-        print(self.repo.head) #HEAD
-        print(self.repo.active_branch.name) #master
-        print(self.repo.head.reference) #master
-        print(self.repo.bare) # False, even with no commits and no tracked files
-        print(self.repo.untracked_files)
+        # print(self.repo.head) #HEAD
+        # print(self.repo.active_branch.name) #master
+        # print(self.repo.head.reference) #master
+        # print(self.repo.bare) # False, even with no commits and no tracked files
+        # print(self.repo.untracked_files)
+        
+        # self.repo.git.restore(self.getRepoPath("D:\TexturePrepTool\TestRepo\TestProject\Assets\Textures\Environments\T_ENV_erree_C.png")) # git restore
         
         return
         
@@ -215,10 +237,14 @@ class MainFrame(wx.Frame):
             self.rename_newname.Disable()
             self.rename_button.Disable()
         
-        # submission should always be closed at this point
+        # submission should always be closed at this point (any pending changes should be discarded)
         self.submission_note.SetValue("")
         self.submission_note.Disable()
         self.submission_button.Disable()
+        
+        self.repo.git.reset() # git reset
+        # self.printToLog("//Version Control Status//:\n"+self.repo.git.status(), self.versioncontrol_text_color) # git status
+        
             
     
     def isValidChar(self, char):
@@ -258,9 +284,10 @@ class MainFrame(wx.Frame):
         
         return False
         
-    def hasValidTypeInfix(self, path, name):
+    def hasValidTypeInfix(self, path):
         parent_folder = path.split('\\')[-2]
         # print("pf is "+parent_folder)
+        name = os.path.basename(path).split(".")[0]
         
         for folder,infix in self.tx_type_map.items():
             if folder == parent_folder:
@@ -324,7 +351,7 @@ class MainFrame(wx.Frame):
             self.printToLog(curr_filename+" does not have a valid prefix. Please use any of the following: "+str(self.approved_prefixes), self.error_text_color)
             is_valid = False
         
-        if not self.hasValidTypeInfix(full_path, curr_filename):
+        if not self.hasValidTypeInfix(full_path):
             self.printToLog(curr_filename+" does not have a valid type infix. The folder-to-infix mapping is "+str(self.tx_type_map), self.error_text_color)
             is_valid = False
         
@@ -390,6 +417,7 @@ class MainFrame(wx.Frame):
                 
                 self.submission_note.SetValue("")
                 self.submission_note.Disable()
+                self.submission_button.Disable()
                 
     
     def onSubmissionButtonClick(self, event):
@@ -397,7 +425,7 @@ class MainFrame(wx.Frame):
         
         full_path = self.selection_filepath.GetValue()
         
-        if self.isNewFile(full_path):        
+        if self.isNewFile(full_path):
             self.repo.git.add(full_path)
             self.printToLog("//Version Control Status//:\n"+self.repo.git.status(), self.versioncontrol_text_color) # git status
         
