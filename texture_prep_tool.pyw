@@ -208,6 +208,8 @@ class MainFrame(wx.Frame):
         
         # self.repo.git.restore(self.getRepoPath("D:\TexturePrepTool\TestRepo\TestProject\Assets\Textures\Environments\T_ENV_erree_C.png")) # git restore
         
+        # print(self.repo.git.log())
+        
         return
         
 
@@ -431,7 +433,7 @@ class MainFrame(wx.Frame):
         
         commit_note = self.submission_note.GetValue()
         self.repo.git.commit('-m',commit_note) #git commit -m 'commit note' ./path/to/my/file.ext
-        self.printToLog("//Version Control Status//:\n"+self.repo.git.status(), self.versioncontrol_text_color) # git status
+        self.printToLog("//Commit Log//:\n"+self.repo.git.log(), self.versioncontrol_text_color) # git status
         
         
 if __name__ == '__main__':
