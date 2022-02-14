@@ -18,7 +18,7 @@ class MainFrame(wx.Frame):
         # init repo (safe to do every startup)
         self.repo = Repo.init(self.base_repo_path)
         # discard changes in working directory
-        self.repo.git.restore('.')
+        # self.repo.git.restore('.')
         
         self.max_name_length = 64
         self.max_path_length = 260 # based on old Windows path limit
